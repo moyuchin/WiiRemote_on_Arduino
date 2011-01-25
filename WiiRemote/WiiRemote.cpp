@@ -47,8 +47,10 @@ WiiRemote::WiiRemote(void) {
     command_scid_ = 0x0040;
     interrupt_scid_ = 0x0041;
 
+    hid_flags_ = 0;
     hid_buttons_ = 0;
     old_hid_buttons_ = 0;
+    hid_buttons_click_ = 0;
 
     bdaddr_acquisition_mode_ = BD_ADDR_INQUIRY;
 }
@@ -74,6 +76,11 @@ void WiiRemote::task(void (*pFunc)(void)) {
     // wait for addressing state
     if (Usb.getUsbTaskState() == USB_STATE_CONFIGURING) {
         initBTController();
+
+        hci_state_ = HCI_INIT_STATE;
+        hci_counter_ = 10;
+        l2cap_state_ = L2CAP_DOWN_STATE;
+
         Usb.setUsbTaskState(USB_STATE_RUNNING);
     }
 

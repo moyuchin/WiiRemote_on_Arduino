@@ -359,6 +359,7 @@ class WiiRemote {
     uint8_t hid_flags_;
     uint16_t hid_buttons_;
     uint16_t old_hid_buttons_;
+    uint16_t hid_buttons_click_;
 
     /* */
     Point3i_t Accel_Raw_[ACCEL_AVERAGE_SIZE];

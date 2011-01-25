@@ -10,7 +10,7 @@
 #define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*array))
 
 
-#define WIIREMOTE_DEBUG 1
+#define WIIREMOTE_DEBUG 0
 #if WIIREMOTE_DEBUG
 void Serial_print_P(const prog_char *str) {
     char c;
@@ -767,6 +767,7 @@ void WiiRemote::readReport(uint8_t *data) {
             } else {
                 hid_flags_ &= ~HID_FLAG_BUTTONS_CHANGED;
             }
+            hid_buttons_click_ = ~hid_buttons_ & old_hid_buttons_;
 
             parseAccel(data);
             //parseButtons(data);   /* buttonPressed() can be used */
@@ -926,8 +927,10 @@ bool WiiRemote::buttonPressed(uint16_t button) {
 }
 
 bool WiiRemote::buttonClicked(uint16_t button) {
-    /* true when a button is released */
-    return ((~hid_buttons_ & old_hid_buttons_ & button) != 0);
+    /* true when a button is clicked */
+    bool click = ((hid_buttons_click_ & button) != 0);
+    hid_buttons_click_ &= ~button;  // clear "click" event
+    return click;
 }
 
 

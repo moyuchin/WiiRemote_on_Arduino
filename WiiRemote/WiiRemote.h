@@ -1,3 +1,18 @@
+/*
+WiiRemote.h - WiiRemote Bluetooth stack on Arduino with USB Host Shield
+Copyright (C) 2010 Tomo Tanaka
+
+This program is based on <wiiblue.pde> which is developed by Oleg Mazurov. This
+program also needs MAX3421E and USB libraries for Arduino written by Oleg. The
+source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
+
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #ifndef _WIIREMOTE_H_
 #define _WIIREMOTE_H_
@@ -6,6 +21,7 @@
 #include "Usb.h"
 
 enum eDescriptor {
+    // {{{
     /* CSR Bluetooth data taken from descriptors */
     BT_ADDR = 1,
     CSR_VID = 0x0a12,   // CSR Vendor ID
@@ -18,16 +34,20 @@ enum eDescriptor {
     EP_INTERRUPT = 0x03,    // endpoint type
     EP_BULK = 0x02,         // endpoint type
     EP_POLL = 0x01,         // interrupt poll interval
+    // }}}
 };
 
 enum eUSBPipe {
+    // {{{
     CONTROL_PIPE = 0,
     EVENT_PIPE = 1,
     DATAIN_PIPE = 2,
     DATAOUT_PIPE = 3,
+    // }}}
 };
 
 enum eHCI {
+    // {{{
     /* Bluetooth HCI states for HCI_task() */
     HCI_INIT_STATE = 0,
     HCI_RESET_STATE,
@@ -75,9 +95,11 @@ enum eHCI {
                      USB_SETUP_TYPE_CLASS|
                      USB_SETUP_RECIPIENT_DEVICE),
     HCI_COMMAND_REQ = 0,
+    // }}}
 };
 
 enum eL2CAP {
+    // {{{
     /* Bluetooth L2CAP PSM */
     L2CAP_PSM_WRITE = 0x11,
     L2CAP_PSM_READ  = 0x13,
@@ -139,9 +161,11 @@ enum eL2CAP {
  *  |     Code      |  Identifier   |            Length             |   Control frame (C-frame)
  *  .-+-+-+-+-+-+-+-|-+-+-+-+-+-+-+-|-+-+-+-+-+-+-+-|-+-+-+-+-+-+-+-.   (signaling packet format)
  */
+    // }}}
 };
 
 enum eHID {
+    // {{{
     /* HID event flag */
     HID_FLAG_STATUS_REPORTED  = 0x01,
     HID_FLAG_BUTTONS_CHANGED  = 0x02,
@@ -167,22 +191,28 @@ enum eHID {
     INPUT_REPORT_BUTTONS       = 0x30,  // Buttons data
     INPUT_REPORT_BUTTONS_ACCEL = 0x31,  // Buttons and accelerometer data
     INPUT_REPORT_IR_EXT_ACCEL  = 0x37,  // Buttons and accelerometer with 10 IR bytes and 6 extension bytes
+    // }}}
 };
 
 enum eBDAddressMode {
+    // {{{
     /* Wii Remote BD_ADDR acquisition mode */
     BD_ADDR_FIXED = 0,  // wiimote_bdaddr_ needs to be set
     BD_ADDR_INQUIRY,    // using HCI_INQUIRY to get BD_ADDR
+    // }}}
 };
 
 enum eWiiRemoteLED {
+    // {{{
     WIIREMOTE_LED1 = 0x10,
     WIIREMOTE_LED2 = 0x20,
     WIIREMOTE_LED3 = 0x40,
     WIIREMOTE_LED4 = 0x80,
+    // }}}
 };
 
 enum eWiiRemoteButtons {
+    // {{{
     WIIREMOTE_LEFT  = 0x0001,
     WIIREMOTE_RIGHT = 0x0002,
     WIIREMOTE_DOWN  = 0x0004,
@@ -194,6 +224,7 @@ enum eWiiRemoteButtons {
     WIIREMOTE_A     = 0x0800,
     WIIREMOTE_MINUS = 0x1000,
     WIIREMOTE_HOME  = 0x8000,
+    // }}}
 };
 
 enum eWiiRemote {
@@ -374,4 +405,4 @@ class WiiRemote {
 #endif  // _WIIREMOTE_H_
 
 
-// vim: sts=4 sw=4 ts=4 et cin
+// vim: sts=4 sw=4 ts=4 et cin fdm=marker cms=//%s

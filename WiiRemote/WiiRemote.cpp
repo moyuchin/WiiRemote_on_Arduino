@@ -1,3 +1,18 @@
+/*
+WiiRemote.cpp - WiiRemote Bluetooth stack on Arduino with USB Host Shield
+Copyright (C) 2010 Tomo Tanaka
+
+This program is based on <wiiblue.pde> which is developed by Oleg Mazurov. This
+program also needs MAX3421E and USB libraries for Arduino written by Oleg. The
+source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
+
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "WProgram.h"
 #include <avr/pgmspace.h>
@@ -11,6 +26,7 @@
 
 
 #define WIIREMOTE_DEBUG 0
+// {{{
 #if WIIREMOTE_DEBUG
 void Serial_print_P(const prog_char *str) {
     char c;
@@ -36,6 +52,7 @@ void Serial_println_P(const prog_char *str) {
 #define DEBUG_PRINT_P(c)
 #define DEBUG_PRINTLN_P(c)
 #endif
+// }}}
 
 
 MAX3421E Max;
@@ -541,6 +558,7 @@ void WiiRemote::L2CAP_task(void) {
         }
         break;
 */
+
       case L2CAP_WIIREMOTE_CAL_STATE:
         if (hid_command_success) {
             setReportMode(INPUT_REPORT_IR_EXT_ACCEL);
@@ -653,7 +671,7 @@ void WiiRemote::L2CAP_event_task(void) {
 uint8_t WiiRemote::l2cap_connect(uint16_t scid, uint16_t psm) {
     uint8_t cmd_buf[8];
     cmd_buf[0] = L2CAP_CMD_CONNECTION_REQUEST;  // Code
-    cmd_buf[1] = (uint8_t) (l2cap_txid_++);      // Identifier
+    cmd_buf[1] = (uint8_t) (l2cap_txid_++);     // Identifier
     cmd_buf[2] = 0x04;                          // Length
     cmd_buf[3] = 0x00;
     cmd_buf[4] = (uint8_t) (psm & 0xff);        // PSM
@@ -961,4 +979,4 @@ Point3f_t WiiRemote::averagePoint3(Point3i_t *data, uint8_t size) {
 }
 
 
-// vim: sts=4 sw=4 ts=4 et cin syntax=arduino
+// vim: sts=4 sw=4 ts=4 et cin fdm=marker cms=//%s syntax=arduino

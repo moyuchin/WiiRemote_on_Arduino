@@ -1,0 +1,65 @@
+This is Arduino library for WiiRemote Bluetooth stack which supports minimum HCI and L2CAP layer for HID profile.
+
+== First of all ==
+This program is based on <wiiblue.pde> which is developed by Oleg Mazurov. This
+program also needs MAX3421E and USB libraries for Arduino written by Oleg. The
+source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
+
+
+== Hardware Requirement ==
+    * Arduino
+    * USB Host Shield
+    * USB Bluetooth Device
+
+
+== Software Requirement ==
+    * MAX3421E and USB library for Arduino written by Oleg Mazurov
+
+
+== GNU GPL ==
+WiiRemote Bluetooth stack on Arduino with USB Host Shield
+Copyright (C) 2010 Tomo Tanaka
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+
+== Files ==
+    WiiRemote/
+        +- WiiRemote.h
+        +- WiiRemote.cpp
+        +- keywords.txt
+        |
+        +- Max3421e_constants.h // written by Oleg
+        +- Max3421e.h           // written by Oleg
+        +- Max3421e.cpp         // written by Oleg
+        +- ch9.h                // written by Oleg
+        +- Usb.h                // written by Oleg
+        +- Usb.cpp              // written by Oleg
+        |
+        +- examples/
+            +- SteeringWii/
+                +- SteeringWii.pde
+
+
+== WiiRemote Class ==
+
+=== Methods ===
+    * void init(void)
+    * void task(void (*pFunc)(void))
+    * void setBDAddress(uint8_t *bdaddr, int size)
+    * void setBDAddressMode(eBDAddressMode mode)
+    * uint8_t setLED(uint8_t led)
+    * bool buttonPressed(uint16_t button)
+    * bool buttonClicked(uint16_t button)
+
+=== Member Variables ===
+    * Report_t Report
+
+
+== ACKNOWLEDGEMENT ==
+I appreciate the gread code developed by Oleg
+

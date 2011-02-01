@@ -2,7 +2,7 @@ This is Arduino library for WiiRemote Bluetooth stack which supports minimum HCI
 
 == First of all ==
 This program is based on <wiiblue.pde> which is developed by Richard Ibbotson.
-This program also needs MAX3421E and USB libraries for Arduino written by Oleg.
+This program also needs MAX3421E and USB libraries for Arduino written by Oleg Mazurov.
 The source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
 
 

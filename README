@@ -1,9 +1,9 @@
 This is Arduino library for WiiRemote Bluetooth stack which supports minimum HCI and L2CAP layer for HID profile.
 
 == First of all ==
-This program is based on <wiiblue.pde> which is developed by Oleg Mazurov. This
-program also needs MAX3421E and USB libraries for Arduino written by Oleg. The
-source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
+This program is based on <wiiblue.pde> which is developed by Richard Ibbotson.
+This program also needs MAX3421E and USB libraries for Arduino written by Oleg.
+The source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
 
 
 == Hardware Requirement ==
@@ -61,5 +61,5 @@ You should have received a copy of the GNU General Public License along with thi
 
 
 == ACKNOWLEDGEMENT ==
-I appreciate the gread code developed by Oleg
+I appreciate the gread codes developed by Richard and Oleg :-)
 

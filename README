@@ -45,19 +45,77 @@ You should have received a copy of the GNU General Public License along with thi
                 +- SteeringWii.pde
 
 
+== Usage ==
+
+=== Modify USB Device Descriptors ===
+The values of CSR_VID and CSR_PID described in WiiRemote.h need to be modified
+to match descriptors of USB Bluetooth Device to be used.
+
+
 == WiiRemote Class ==
 
 === Methods ===
     * void init(void)
+
     * void task(void (*pFunc)(void))
+
+    * uint8_t getStatus(void)
+            This returns unsigned int as the status of USB Bluetooth Device and
+            WiiRemote connection. Bit field shows as follows:
+            bit 0:  WIIREMOTE_STATE_USB_AUTHORIZED
+                    USB BT Device is authorized as the library expects.
+            bit 1:  WIIREMOTE_STATE_USB_CONFIGURED
+                    USB BT Device is plugged into the USB port on the Shield.
+            bit 2:  WIIREMOTE_STATE_CONNECTED
+                    WiiRemote has been connected to USB BT Device.
+            bit 3:  WIIREMOTE_STATE_RUNNING
+                    WiiRemote has been established L2CAP connection.
+
     * void setBDAddress(uint8_t *bdaddr, int size)
+
     * void setBDAddressMode(eBDAddressMode mode)
+            This selects how to acquire BD_ADDR to establish HCI connection.
+            The mode can be set:
+                BD_ADDR_FIXED:    Use specified BD_ADDR set by setBDAddress().
+                BD_ADDR_INQUIRY:  Discover BD_ADDR of WiiRemote to be connected.
+
+    * void getBDAddress(uint8_t *bdaddr, int size)
+
     * uint8_t setLED(uint8_t led)
+            This turns on/off LEDs of WiiRemote. setLED(0x0) turns off all LEDs,
+            setLED(0x10) turns on LED1 and setLED(0xf0) turns o all LEDs.
+            These enum can be used:
+                WIIREMOTE_LED1 = 0x10,
+                WIIREMOTE_LED2 = 0x20,
+                WIIREMOTE_LED3 = 0x40,
+                WIIREMOTE_LED4 = 0x80,
+
     * bool buttonPressed(uint16_t button)
+            This returns the state of WiiRemote button specified in the call.
+            True if the button pressed. Buttons are:
+                WIIREMOTE_LEFT  = 0x0001,
+                WIIREMOTE_RIGHT = 0x0002,
+                WIIREMOTE_DOWN  = 0x0004,
+                WIIREMOTE_UP    = 0x0008,
+                WIIREMOTE_PLUS  = 0x0010,
+                WIIREMOTE_TWO   = 0x0100,
+                WIIREMOTE_ONE   = 0x0200,
+                WIIREMOTE_B     = 0x0400,
+                WIIREMOTE_A     = 0x0800,
+                WIIREMOTE_MINUS = 0x1000,
+                WIIREMOTE_HOME  = 0x8000,
+
     * bool buttonClicked(uint16_t button)
+            This checkes whether a specified WiiRemote button is clicked.
+            True if the button clicked. Buttons are the same as above.
 
 === Member Variables ===
     * Report_t Report
+
+
+== Hint ==
+Hints from PS3 and Wiimote game controllers thread in Circuit@Home.
+    - Bluetooth 1.x seems not work on this library.
 
 
 == ACKNOWLEDGEMENT ==

@@ -23,6 +23,9 @@ void setup()
 void loop()
 {
   wiiremote.task(&myapp);
+  if (!(wiiremote.getStatus() & WIIREMOTE_STATE_RUNNING)) {
+    Serial.print("\r\nlost Bluetooth connection");
+  }
 }
 
 

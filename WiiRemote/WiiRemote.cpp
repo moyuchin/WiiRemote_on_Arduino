@@ -2,9 +2,9 @@
 WiiRemote.cpp - WiiRemote Bluetooth stack on Arduino with USB Host Shield
 Copyright (C) 2010 Tomo Tanaka
 
-This program is based on <wiiblue.pde> which is developed by Oleg Mazurov. This
-program also needs MAX3421E and USB libraries for Arduino written by Oleg. The
-source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
+This program is based on <wiiblue.pde> which is developed by Richard Ibbotson.
+This program also needs MAX3421E and USB libraries for Arduino written by Oleg Mazurov.
+The source codes can be grabbed from <https://github.com/felis/USB_Host_Shield>.
 
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
@@ -60,9 +60,10 @@ USB Usb;
 
 
 WiiRemote::WiiRemote(void) {
+    l2cap_state_ = L2CAP_DOWN_STATE;
     l2cap_txid_ = 0;
-    command_scid_ = 0x0040;
-    interrupt_scid_ = 0x0041;
+    command_scid_ = 0x0040;     // L2CAP local CID for HID_Control
+    interrupt_scid_ = 0x0041;   // L2CAP local CID for HID_Interrupt
 
     hid_flags_ = 0;
     hid_buttons_ = 0;
@@ -70,6 +71,7 @@ WiiRemote::WiiRemote(void) {
     hid_buttons_click_ = 0;
 
     bdaddr_acquisition_mode_ = BD_ADDR_INQUIRY;
+    wiiremote_status_ = 0;
 }
 
 WiiRemote::~WiiRemote(void) {
@@ -88,17 +90,20 @@ void WiiRemote::task(void (*pFunc)(void)) {
     // re-initialize
     if (Usb.getUsbTaskState() == USB_DETACHED_SUBSTATE_INITIALIZE) {
         /* TODO */
+        wiiremote_status_ = 0;
     }
 
     // wait for addressing state
     if (Usb.getUsbTaskState() == USB_STATE_CONFIGURING) {
         initBTController();
 
-        hci_state_ = HCI_INIT_STATE;
-        hci_counter_ = 10;
-        l2cap_state_ = L2CAP_DOWN_STATE;
+        if (wiiremote_status_ & WIIREMOTE_STATE_USB_CONFIGURED) {
+            hci_state_ = HCI_INIT_STATE;
+            hci_counter_ = 10;
+            l2cap_state_ = L2CAP_DOWN_STATE;
 
-        Usb.setUsbTaskState(USB_STATE_RUNNING);
+            Usb.setUsbTaskState(USB_STATE_RUNNING);
+        }
     }
 
     if (Usb.getUsbTaskState() == USB_STATE_RUNNING) {
@@ -106,21 +111,34 @@ void WiiRemote::task(void (*pFunc)(void)) {
         L2CAP_task();   // start polling the ACL input pipe too, though discard
                         // data until connected
     }
-    if (l2cap_state_ == L2CAP_READY_STATE) {
+    //if (l2cap_state_ == L2CAP_READY_STATE) {
+    if (wiiremote_status_ & WIIREMOTE_STATE_RUNNING) {
         if (pFunc) { pFunc(); }
     }
 } // task
 
+uint8_t WiiRemote::getStatus(void) {
+    return wiiremote_status_;
+}
+
 void WiiRemote::setBDAddress(uint8_t *bdaddr, int size) {
-    int array_length = ARRAY_LENGTH(wiimote_bdaddr_);
+    int array_length = ARRAY_LENGTH(wiiremote_bdaddr_);
 
     for (int i = 0; i < size && i < array_length; i++) {
-        wiimote_bdaddr_[i] = bdaddr[i];
+        wiiremote_bdaddr_[i] = bdaddr[i];
     }
 }
 
 void WiiRemote::setBDAddressMode(eBDAddressMode mode) {
     bdaddr_acquisition_mode_ = mode;
+}
+
+void WiiRemote::getBDAddress(uint8_t *bdaddr, int size) {
+    int array_length = ARRAY_LENGTH(wiiremote_bdaddr_);
+
+    for (int i = 0; i < size && i < array_length; i++) {
+        bdaddr[i] = wiiremote_bdaddr_[i];
+    }
 }
 
 
@@ -172,7 +190,7 @@ void WiiRemote::initBTController(void) {
     if (rcode) {
         DEBUG_PRINT_P( PSTR("\r\nDevice Descriptor Error: ") );
         DEBUG_PRINT(rcode, HEX);
-        while(1);   // stop
+        return;
     }
 
     device_descriptor = (USB_DEVICE_DESCRIPTOR *) &buf;
@@ -183,8 +201,10 @@ void WiiRemote::initBTController(void) {
         DEBUG_PRINT(device_descriptor->idVendor, HEX);
         DEBUG_PRINT_P( PSTR("\r\n\tProduct ID = ") );
         DEBUG_PRINT(device_descriptor->idProduct, HEX);
-        while(1);   // stop
+        return;
     }
+
+    wiiremote_status_ |= WIIREMOTE_STATE_USB_AUTHORIZED;
 
     // configure device
     rcode = Usb.setConf(BT_ADDR,
@@ -193,8 +213,9 @@ void WiiRemote::initBTController(void) {
     if (rcode) {
         DEBUG_PRINT_P( PSTR("\r\nDevice Configuration Error: ") );
         DEBUG_PRINT(rcode, HEX);
-        while(1);   // stop
+        return;
     }
+    wiiremote_status_ |= WIIREMOTE_STATE_USB_CONFIGURED;
 
     //LCD.clear();
 
@@ -259,7 +280,7 @@ void WiiRemote::HCI_task(void) {
             if (hci_inquiry_result) {
                 DEBUG_PRINT_P( PSTR("\r\nHCI Inquiry complete") );
             }
-            hci_connect(wiimote_bdaddr_);   // connect to Wiimote
+            hci_connect(wiiremote_bdaddr_); // connect to Wiimote
             hci_state_ = HCI_CONNECT_OUT_STATE;
             hci_counter_ = 10000;
         }
@@ -271,14 +292,15 @@ void WiiRemote::HCI_task(void) {
                 DEBUG_PRINT_P( PSTR("\r\nConnected to Wiimote") );
                 hci_state_ = HCI_CONNECTED_STATE;
                 l2cap_state_ = L2CAP_INIT_STATE;
+                wiiremote_status_ |= WIIREMOTE_STATE_CONNECTED;
             }
             else {
-                hci_connect(wiimote_bdaddr_);   // try again to connect to Wiimote
+                hci_connect(wiiremote_bdaddr_); // try again to connect to Wiimote
                 hci_counter_ = 10000;
             }
         }
         if (hci_timeout) {
-            hci_connect(wiimote_bdaddr_);   // try again to connect to Wiimote
+            hci_connect(wiiremote_bdaddr_); // try again to connect to Wiimote
             hci_counter_ = 10000;
         }
         break;
@@ -289,6 +311,7 @@ void WiiRemote::HCI_task(void) {
             hci_state_ = HCI_INIT_STATE;
             hci_counter_ = 10;
             l2cap_state_ = L2CAP_DOWN_STATE;
+            wiiremote_status_ &= ~WIIREMOTE_STATE_CONNECTED;
         }
         break;
 
@@ -306,6 +329,10 @@ void WiiRemote::HCI_event_task(void) {
     // check input on the event pipe (endpoint 1)
     rcode = Usb.inTransfer(BT_ADDR, ep_record_[ EVENT_PIPE ].epAddr,
                            MAX_BUFFER_SIZE, (char *) buf, USB_NAK_NOWAIT);
+    /*
+    DEBUG_PRINT_P( PSTR("\r\nHCI_event_task: rcode = 0x") );
+    DEBUG_PRINT(rcode, HEX);
+    */
     if (!rcode) {
         /*  buf[0] = Event Code                            */
         /*  buf[1] = Parameter Total Length                */
@@ -323,8 +350,8 @@ void WiiRemote::HCI_event_task(void) {
             /* assume that Num_Responses is 1 */
             DEBUG_PRINT_P( PSTR("\r\nFound WiiRemote BD_ADDR:\t") );
             for (uint8_t i = 0; i < 6; i++) {
-                wiimote_bdaddr_[5-i] = (uint8_t) buf[3+i];
-                DEBUG_PRINT(wiimote_bdaddr_[5-i], HEX);
+                wiiremote_bdaddr_[5-i] = (uint8_t) buf[3+i];
+                DEBUG_PRINT(wiiremote_bdaddr_[5-i], HEX);
             }
             break;
 
@@ -362,6 +389,15 @@ void WiiRemote::HCI_event_task(void) {
             break;
 
           case HCI_EVENT_NUM_COMPLETED_PKT:
+#if WIIREMOTE_DEBUG
+            DEBUG_PRINT_P( PSTR("\r\nHCI Number Of Completed Packets Event: ") );
+            DEBUG_PRINT_P( PSTR("\r\n\tNumber_of_Handles = 0x") );
+            DEBUG_PRINT(buf[2], HEX);
+            for (uint8_t i = 0; i < buf[2]; i++) {
+                DEBUG_PRINT_P( PSTR("\r\n\tConnection_Handle = 0x") );
+                DEBUG_PRINT((buf[3+i] | ((buf[4+i] & 0x0F) << 8)), HEX);
+            }
+#endif
             break;
 
           case HCI_EVENT_QOS_SETUP_COMPLETE:
@@ -369,10 +405,17 @@ void WiiRemote::HCI_event_task(void) {
 
           case HCI_EVENT_DISCONN_COMPLETE:
             hci_event_flag_ |= HCI_FLAG_DISCONN_COMPLETE;
+            DEBUG_PRINT_P( PSTR("\r\nHCI Disconnection Complete Event: ") );
+            DEBUG_PRINT_P( PSTR("\r\n\t           Status = 0x") );
+            DEBUG_PRINT(buf[2], HEX);
+            DEBUG_PRINT_P( PSTR("\r\n\tConnection_Handle = 0x") );
+            DEBUG_PRINT((buf[3] | ((buf[4] & 0x0F) << 8)), HEX);
+            DEBUG_PRINT_P( PSTR("\r\n\t           Reason = 0x") );
+            DEBUG_PRINT(buf[5], HEX);
             break;
 
           default:
-            DEBUG_PRINT_P( PSTR("\r\nUnmanaged Event: ") );
+            DEBUG_PRINT_P( PSTR("\r\nUnmanaged Event: 0x") );
             DEBUG_PRINT(buf[0], HEX);
             break;
         }   // switch (buf[0])
@@ -563,6 +606,7 @@ void WiiRemote::L2CAP_task(void) {
         if (hid_command_success) {
             setReportMode(INPUT_REPORT_IR_EXT_ACCEL);
             l2cap_state_ = L2CAP_READY_STATE;
+            wiiremote_status_ |= WIIREMOTE_STATE_RUNNING;
         }
         break;
 /*
@@ -586,6 +630,7 @@ void WiiRemote::L2CAP_task(void) {
         }
         if (l2cap_interrupt_disconnected || l2cap_command_disconnected) {
             l2cap_state_ = L2CAP_DISCONNECT_STATE;
+            wiiremote_status_ &= ~WIIREMOTE_STATE_RUNNING;
         }
         break;
 
@@ -601,10 +646,15 @@ void WiiRemote::L2CAP_task(void) {
 void WiiRemote::L2CAP_event_task(void) {
     uint8_t rcode = 0;  // return code
     uint8_t buf[MAX_BUFFER_SIZE] = {0};
+    static uint8_t prev_rcode = 0;
 
     // check input on the event pipe (endpoint 2)
     rcode = Usb.inTransfer(BT_ADDR, ep_record_[ DATAIN_PIPE ].epAddr,
                            MAX_BUFFER_SIZE, (char *) buf, USB_NAK_NOWAIT);
+    /*
+    DEBUG_PRINT_P( PSTR("\r\nL2CAP_event_task: rcode = 0x") );
+    DEBUG_PRINT(rcode, HEX);
+    */
     if (!rcode) {
         if (acl_handle_ok) {
             if (l2cap_control) {
@@ -654,6 +704,7 @@ void WiiRemote::L2CAP_event_task(void) {
             } // l2cap_control
             else if (l2cap_interrupt) {
                 readReport(buf);
+                wiiremote_status_ |= WIIREMOTE_STATE_RUNNING;
             } // l2cap_interrupt
             else if (l2cap_command){
                 if (hid_handshake_success) {
@@ -662,6 +713,13 @@ void WiiRemote::L2CAP_event_task(void) {
             } // l2cap_command
         } // acl_handle_ok
     } // !rcode
+
+    // check whether NAK is occured
+    if ((prev_rcode == hrSUCCESS) && (rcode == hrNAK)) {
+        wiiremote_status_ &= ~WIIREMOTE_STATE_RUNNING;
+    }
+    prev_rcode = rcode;
+
     return;
 } // L2CAP_event_task
 
@@ -815,7 +873,7 @@ uint8_t WiiRemote::writeReport(uint8_t *data, uint8_t length) {
     buf[3] = (uint8_t) ((5 + length) >> 8);
     buf[4] = (uint8_t) ((1 + length) & 0xff);   // L2CAP header: Length
     buf[5] = (uint8_t) ((1 + length) >> 8);
-    buf[6] = (uint8_t) (command_dcid_ & 0xff);   // L2CAP header: Channel ID
+    buf[6] = (uint8_t) (command_dcid_ & 0xff);  // L2CAP header: Channel ID
     buf[7] = (uint8_t) (command_dcid_ >> 8);
     buf[8] = HID_THDR_SET_REPORT_OUTPUT;        // L2CAP B-frame
     for (uint8_t i = 0; i < length; i++) {
@@ -847,7 +905,7 @@ void WiiRemote::parseCalData(uint8_t *data) {
     DEBUG_PRINT_P( PSTR("\r\n\tXG = ") ); DEBUG_PRINT(Accel_Cal_.gravity.X, HEX);
     DEBUG_PRINT_P( PSTR("\r\n\tYG = ") ); DEBUG_PRINT(Accel_Cal_.gravity.Y, HEX);
     DEBUG_PRINT_P( PSTR("\r\n\tZG = ") ); DEBUG_PRINT(Accel_Cal_.gravity.Z, HEX);
-}
+} // parseCalData
 
 void WiiRemote::parseAccel(uint8_t *data) {
     static uint8_t accel_cnt;
@@ -877,13 +935,15 @@ void WiiRemote::parseAccel(uint8_t *data) {
     Report.Accel.Z = (accel_avg.Z - (float) Accel_Cal_.offset.Z) /
                      (float) (Accel_Cal_.gravity.Z - Accel_Cal_.offset.Z);
 
+#if 0
     DEBUG_PRINT_P( PSTR("\r\nparseAccel X=") );
     DEBUG_PRINT(Report.Accel.X, 2);
     DEBUG_PRINT_P( PSTR(" Y=") );
     DEBUG_PRINT(Report.Accel.Y, 2);
     DEBUG_PRINT_P( PSTR(" Z=") );
     DEBUG_PRINT(Report.Accel.Z, 2);
-}
+#endif
+} // parseAccel
 
 void WiiRemote::parseButtons(uint8_t *data) {
     uint16_t buttons = (data[10] & 0x9f) | (data[11] & 0x9f) << 8;
@@ -898,7 +958,7 @@ void WiiRemote::parseButtons(uint8_t *data) {
     Report.Button.A     = ((buttons & WIIREMOTE_A) != 0);
     Report.Button.Minus = ((buttons & WIIREMOTE_MINUS) != 0);
     Report.Button.Home  = ((buttons & WIIREMOTE_HOME) != 0);
-}
+} // parseButtons
 
 
 /************************************************************/

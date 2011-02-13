@@ -101,8 +101,8 @@ enum eHCI {
 enum eL2CAP {
     // {{{
     /* Bluetooth L2CAP PSM */
-    L2CAP_PSM_WRITE = 0x11,
-    L2CAP_PSM_READ  = 0x13,
+    L2CAP_PSM_WRITE = 0x11, // HID_Control
+    L2CAP_PSM_READ  = 0x13, // HID_Interrupt
 
     /* Bluetooth L2CAP states for L2CAP_task() */
     L2CAP_DOWN_STATE = 0,
@@ -197,7 +197,7 @@ enum eHID {
 enum eBDAddressMode {
     // {{{
     /* Wii Remote BD_ADDR acquisition mode */
-    BD_ADDR_FIXED = 0,  // wiimote_bdaddr_ needs to be set
+    BD_ADDR_FIXED = 0,  // wiiremote_bdaddr_ needs to be set
     BD_ADDR_INQUIRY,    // using HCI_INQUIRY to get BD_ADDR
     // }}}
 };
@@ -224,6 +224,15 @@ enum eWiiRemoteButtons {
     WIIREMOTE_A     = 0x0800,
     WIIREMOTE_MINUS = 0x1000,
     WIIREMOTE_HOME  = 0x8000,
+    // }}}
+};
+
+enum eWiiRemoteStatus {
+    // {{{
+    WIIREMOTE_STATE_USB_AUTHORIZED = 0x01,
+    WIIREMOTE_STATE_USB_CONFIGURED = 0x02,
+    WIIREMOTE_STATE_CONNECTED      = 0x04,
+    WIIREMOTE_STATE_RUNNING        = 0x08,
     // }}}
 };
 
@@ -324,8 +333,10 @@ class WiiRemote {
 
     void init(void);
     void task(void (*)());
+    uint8_t getStatus(void);
     void setBDAddress(uint8_t *, int);
     void setBDAddressMode(eBDAddressMode);
+    void getBDAddress(uint8_t *, int);
     uint8_t setLED(uint8_t/*eWiiRemoteLED*/);
     uint8_t setReportMode(uint8_t);         // TODO declare as private
     uint8_t readData(uint32_t, uint16_t);   // TODO declare as private
@@ -397,7 +408,8 @@ class WiiRemote {
     Point3Cal_t Accel_Cal_;
 
     uint8_t bdaddr_acquisition_mode_;
-    uint8_t wiimote_bdaddr_[6];    // Bluetooth Address of Wii Remote
+    uint8_t wiiremote_bdaddr_[6];   // Bluetooth Address of Wii Remote
+    uint8_t wiiremote_status_;
 
     uint8_t buf_[MAX_BUFFER_SIZE];
 };

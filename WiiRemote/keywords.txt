@@ -12,11 +12,13 @@ WiiRemote	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-init    KEYWORD2
-task    KEYWORD2
-setBDAddress   KEYWORD2
-setBDAddressMode   KEYWORD2
-setLED  KEYWORD2
+init	KEYWORD2
+task	KEYWORD2
+getStatus	KEYWORD2
+setBDAddress	KEYWORD2
+setBDAddressMode	KEYWORD2
+getBDAddress	KEYWORD2
+setLED	KEYWORD2
 buttonPressed	KEYWORD2
 buttonClicked	KEYWORD2
 Report	KEYWORD2
